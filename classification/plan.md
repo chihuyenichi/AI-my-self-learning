@@ -128,13 +128,28 @@ The harmonic mean of Precision and Recall. It gives you a balanced metric if you
 
 ## 4. Multiclass Classification
 
-**Definition:** Classifying instances into more than two classes. Strategies include:
-- **One-versus-All (OvA):** Train N binary classifiers (one per class), pick the highest score.
-- **One-versus-One (OvO):** Train N×(N−1)/2 binary classifiers (every pair), pick the class that wins most duels.
+**Purpose:** Classify instances into **more than two classes** (e.g., classifying handwritten digits 0–9 instead of just "5 vs not-5").
 
-**Example:** `SGDClassifier` on MNIST with 10 classes automatically uses OvA. `OneVsOneClassifier(SGDClassifier())` explicitly uses OvO (45 classifiers). `RandomForestClassifier` handles multiclass natively without OvA/OvO.
+**Definition:** A supervised learning task where each instance is assigned exactly one label from a set of N > 2 mutually exclusive classes.
 
-**Explanation:** Scikit-Learn auto-selects OvA for most binary classifiers and OvO for SVMs. OvO is faster for algorithms that scale poorly with dataset size. Feature scaling (StandardScaler) raised accuracy from ~84% to ~89%.
+**Feature Keys:**
+- Output is one class from N possible (single-label, unlike multilabel)
+- Classes are mutually exclusive (each image is either a 3 or a 5, not both)
+- Can use **OvA** (One-versus-All) — train N binary classifiers, pick highest score
+- Or **OvO** (One-versus-One) — train N×(N−1)/2 binary classifiers, pick most wins
+- Some algorithms (Random Forest, naive Bayes) handle multiclass natively
+
+**How It Works:**
+- **OvA (default):** For N=10 digits, train 10 binary detectors (0-detector, 1-detector, ...). For a new image, get decision scores from all 10, pick the class with the highest score.
+- **OvO:** Train 45 classifiers (one for each digit pair). Run the image through all 45, count duels won — the class with the most wins is the prediction.
+- **Native:** RandomForestClassifier directly outputs class probabilities via `predict_proba()`.
+
+**Example:** `SGDClassifier` on MNIST with 10 classes automatically uses OvA. `OneVsOneClassifier(SGDClassifier())` explicitly uses OvO (45 classifiers). `RandomForestClassifier` handles multiclass natively without OvA/OvO. Feature scaling (StandardScaler) raised accuracy from ~84% to ~89%.
+
+**Which Case to Use:**
+- **OvA** when the classifier trains quickly on large datasets (e.g., SGD, Logistic Regression)
+- **OvO** when the classifier scales poorly with data size (e.g., SVM), since each sub-classifier trains on only 2 classes
+- **Native multiclass** when the algorithm supports it directly (Random Forest, KNN)
 
 ---
 
@@ -150,21 +165,61 @@ The harmonic mean of Precision and Recall. It gives you a balanced metric if you
 
 ## 6. Multilabel Classification
 
-**Definition:** A classification system that outputs multiple binary labels per instance (e.g., tagging multiple people in a photo).
+**Purpose:** Assign **multiple binary tags** to a single instance simultaneously (e.g., recognizing multiple people in one photo, tagging multiple objects in an image).
+
+**Definition:** A classification system that outputs multiple binary labels (0/1) per instance. Unlike binary/multiclass where each instance gets exactly one label, multilabel allows any subset of labels to be positive.
+
+**Feature Keys:**
+- Output is a vector of binary values, one per label
+- Labels are **not mutually exclusive** — an instance can have 0, 1, or many labels
+- Each label is essentially its own binary classification subproblem
+- Not all classifiers support multilabel natively (e.g., KNN does, SGD does not)
+- Evaluation uses **averaged F1 scores** across labels (macro or weighted)
+
+**How It Works:**
+- Train on a target matrix where each column is a binary label (e.g., `y_multilabel = np.c_[y_train_large, y_train_odd]`)
+- The classifier learns to predict all labels simultaneously
+- For prediction, the model outputs a vector like `[False, True]` meaning "not large, odd"
+- Evaluation: compute F1 per label, then average (`average="macro"` for unweighted, `average="weighted"` by label support)
 
 **Example:** For digit "5", predict two labels: "is it large (≥7)? False" and "is it odd? True" → output `[False, True]`. `KNeighborsClassifier` supports this natively.
 
-**Explanation:** Unlike binary or multiclass (single label per instance), multilabel systems can assign any number of labels. Evaluation often uses averaged F1 scores across labels, with options like `"macro"` (unweighted) or `"weighted"` (by label support).
+**Which Case to Use:**
+- **Face recognition** — tag all known faces appearing in a photo
+- **Image tagging** — assign multiple objects, scenes, or attributes to one image
+- **Text topic classification** — a news article can be about both "politics" and "economy"
+- **Medical diagnosis** — a patient may have multiple conditions simultaneously
 
 ---
 
 ## 7. Multioutput Classification
 
-**Definition:** A generalization of multilabel classification where each label can have multiple possible values (multiclass). The output is a vector, and each position can take more than two values.
+**Purpose:** Predict a **vector of values** where each element can belong to more than two classes (or be a continuous value) — the most general form of classification.
 
-**Example:** Removing noise from digit images — the input is a noisy image, and the output is a clean image. Each of the 784 pixels is a label with 256 possible values (0–255). `KNeighborsClassifier` is trained on `X_train_mod` (noisy) vs `y_train_mod` (clean original).
+**Definition:** A generalization of multilabel classification where each output label can take multiple possible values (multiclass), not just binary. Also called multioutput-multiclass classification. Blurs the line between classification and regression.
 
-**Explanation:** Multioutput systems blur the line between classification and regression (predicting pixel intensity is regression-like). They are the most general classification framework, capable of handling complex output structures.
+**Feature Keys:**
+- Output is a vector, and each position can have >2 possible values
+- A direct generalization: Binary → Multiclass (single label, many values) → Multilabel (many binary labels) → Multioutput (many labels, each with many values)
+- Each output dimension is independent (or learned jointly)
+- Can handle mixed output types (e.g., some categorical, some numerical)
+- The same model (e.g., KNN) can be trained directly on vector targets
+
+**How It Works:**
+- The target `y` is a 2D array where each column is an output to predict
+- For the denoising example: `y_train_mod = X_train` (clean images), `X_train_mod = X_train + noise` (noisy input)
+- The model learns to map a noisy 784-dim input → a clean 784-dim output
+- Each of the 784 output positions has 256 possible values (0–255)
+- Prediction produces a full output vector (e.g., a cleaned image)
+
+**Example:** Removing noise from digit images — the input is a noisy image, and the output is a clean image. Each of the 784 pixels is a label with 256 possible values (0–255). `KNeighborsClassifier` is trained on `X_train_mod` (noisy) vs `y_train_mod` (clean original). `knn_clf.predict([X_test_mod[some_index]])` returns a cleaned digit.
+
+**Which Case to Use:**
+- **Image denoising** — clean a noisy image pixel by pixel
+- **Image colorization** — predict RGB values for each pixel from grayscale input
+- **Object localization** — predict bounding box coordinates (x, y, w, h) plus class label
+- **Sequence prediction** — predict multiple output tokens from a single input
+- Any problem where the output is a **structured vector** with more than binary values per position
 
 ---
 
