@@ -73,7 +73,9 @@ Measures completeness. Out of all the *real* positive instances in the dataset, 
 
 #### 4. F1-Score
 The harmonic mean of Precision and Recall. It gives you a balanced metric if your data has an uneven class distribution (imbalanced dataset).
-* **Formula:** $$\text{F1-Score} = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$$es only on the main diagonal.
+- **Formula:** $$\text{F1-Score} = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$$
+
+es only on the main diagonal.
 
 
 
