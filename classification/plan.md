@@ -92,7 +92,8 @@ The harmonic mean of Precision and Recall. It gives you a balanced metric if you
 
 **Definition:** Increasing the decision threshold increases precision but decreases recall, and vice versa. The threshold determines above which score an instance is classified as positive.
 
-![alt](/image-materials/decision-threshold.png)
+![alt-text](image-materials/decision-threshold.png)
+
 **Example:** With threshold = 0, the SGDClassifier returns `True` for a 5. Raising threshold to 8,000 misses that same 5. Choosing a threshold of ~7,816 achieves 90% precision but recall drops to ~43.7%.
 
 **Explanation:** There is no free lunch — you must choose the tradeoff that suits your application. The `precision_recall_curve()` function helps visualize this tradeoff across all thresholds.
