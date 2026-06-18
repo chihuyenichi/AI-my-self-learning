@@ -31,7 +31,7 @@ A neural network learns by example, passing data through layers of mathematical 
 - Hidden layers extract increasingly abstract features from raw input
 
 
-![Neural Network Training Workflow](/image-materials/network-trainning-work-flow.png)
+![Neural Network Training Workflow](image-materials/network-trainning-work-flow.png)
 
 ## Kernel Methods
 
